@@ -1,32 +1,74 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import api from '../api';
 
 function StudentTable() {
+  const location = useLocation();
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState(''); // Store the debounced search term
   const [page, setPage] = useState(1);
-  const limit = 5;
+  const [hasMore, setHasMore] = useState(true);
+  const [message, setMessage] = useState(location.state?.message || '');
+  const [error, setError] = useState(location.state?.error || '');
+  const limit = 10;
 
+  // Handle the search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search); // Set the debounced search value
+    }, 500); // Wait for 500ms after the user stops typing
+
+    return () => clearTimeout(timer); // Clear the timeout on every render to restart debounce
+  }, [search]);
+
+  // Fetch students based on the page and search query
   useEffect(() => {
     const fetchStudents = async () => {
-      const res = await api.get(`?page=${page}&limit=${limit}`);
-      setStudents(res.data);
+      try {
+        const res = await api.get(`?page=${page}&limit=${limit}&search=${debouncedSearch}`);
+        setStudents(res.data);
+        setHasMore(res.data.length === limit);
+      } catch (err) {
+        console.error('Failed to fetch students:', err);
+        setError('Failed to load student data. Please try again later.');
+      }
     };
 
     fetchStudents();
-  }, [page]);
+  }, [page, debouncedSearch]); // Trigger when page or debouncedSearch changes
 
   const deleteStudent = async (id) => {
-    await api.delete(`/${id}`);
-    const res = await api.get(`?page=${page}&limit=${limit}`);
-    setStudents(res.data);
+    try {
+      await api.delete(`/${id}`);
+      const res = await api.get(`?page=${page}&limit=${limit}&search=${debouncedSearch}`);
+      setStudents(res.data);
+      setHasMore(res.data.length === limit);
+      setMessage('Student record deleted');
+    } catch (err) {
+      setError('Failed to delete student. Please try again.');
+    }
   };
 
+  useEffect(() => {
+    if (location.state?.message || location.state?.error) {
+      // Clear message/error from the history after first load
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMessage('');
+      setError('');
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [message, error]);
+
   const filtered = students.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase()) ||
-    s.course.toLowerCase().includes(search.toLowerCase())
+    s.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    s.email.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    s.course.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
   return (
@@ -40,12 +82,23 @@ function StudentTable() {
         className="form-control my-3"
         placeholder="Search"
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => setSearch(e.target.value)} // Update search state
       />
+      {message && (
+        <div className="alert alert-success alert-dismissible fade show" role="alert">
+          {message}
+        </div>
+      )}
 
+      {error && (
+        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+          {error}
+        </div>
+      )}
       <table className="table table-striped">
         <thead className="table-dark">
           <tr>
+            <th>S.No.</th>
             <th>Name</th>
             <th>Course</th>
             <th>Email</th>
@@ -53,8 +106,9 @@ function StudentTable() {
           </tr>
         </thead>
         <tbody>
-          {filtered.map((s) => (
+          {filtered.map((s, index) => (
             <tr key={s.id}>
+              <td>{(page - 1) * limit + index + 1}</td>
               <td>{s.name}</td>
               <td>{s.course}</td>
               <td>{s.email}</td>
@@ -71,13 +125,14 @@ function StudentTable() {
         <button
           className="btn btn-secondary"
           disabled={page === 1}
-          onClick={() => setPage(p => p - 1)}
+          onClick={() => setPage((p) => p - 1)}
         >
           Previous
         </button>
         <button
           className="btn btn-secondary"
-          onClick={() => setPage(p => p + 1)}
+          disabled={!hasMore}
+          onClick={() => setPage((p) => p + 1)}
         >
           Next
         </button>

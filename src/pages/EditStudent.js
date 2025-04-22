@@ -13,8 +13,12 @@ function EditStudent() {
   }, [id]);
 
   const updateStudent = async (data) => {
-    await api.put(`/${id}`, data);
-    navigate('/');
+    try {
+      await api.put(`/${id}`, data);
+      navigate('/', { state: { message: 'Student updated successfully' } });
+    } catch (error) {
+      navigate('/', { state: { error: 'Failed to update student. Please try again.' } });
+    }
   };
 
   return (

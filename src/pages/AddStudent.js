@@ -7,10 +7,13 @@ function AddStudent() {
   const navigate = useNavigate();
 
   const addStudent = async (data) => {
-    await api.post('/', data);
-    navigate('/');
+    try {
+      await api.post('/', data);
+      navigate('/', { state: { message: 'Student added successfully' } });
+    } catch (error) {
+      navigate('/', { state: { error: 'Failed to add student. Please try again.' } });
+    }
   };
-
   return (
     <div className="container mt-4">
       <h3>Add Student</h3>
