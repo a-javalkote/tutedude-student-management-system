@@ -50,12 +50,13 @@ function StudentTable() {
     }
   };
 
+  // Clear message/error after the first load
   useEffect(() => {
     if (location.state?.message || location.state?.error) {
       // Clear message/error from the history after first load
       window.history.replaceState({}, document.title);
     }
-  }, []);
+  }, [location.state?.message, location.state?.error]); // Add dependencies
 
   useEffect(() => {
     const timer = setTimeout(() => {
