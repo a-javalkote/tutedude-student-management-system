@@ -23,7 +23,7 @@ function StudentTable() {
   };
 
   const filtered = students.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.name.toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase()) ||
     s.course.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -36,7 +36,7 @@ function StudentTable() {
 
       <input
         className="form-control my-3"
-        placeholder="Search by name or course..."
+        placeholder="Search"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
