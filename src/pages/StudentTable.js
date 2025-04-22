@@ -8,22 +8,24 @@ function StudentTable() {
   const [page, setPage] = useState(1);
   const limit = 5;
 
-  const getStudents = async () => {
-    const res = await api.get(`?page=${page}&limit=${limit}`);
-    setStudents(res.data);
-  };
-
   useEffect(() => {
-    getStudents();
+    const fetchStudents = async () => {
+      const res = await api.get(`?page=${page}&limit=${limit}`);
+      setStudents(res.data);
+    };
+
+    fetchStudents();
   }, [page]);
 
   const deleteStudent = async (id) => {
     await api.delete(`/${id}`);
-    getStudents();
+    const res = await api.get(`?page=${page}&limit=${limit}`);
+    setStudents(res.data);
   };
 
   const filtered = students.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase()) ||
+    s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.email.toLowerCase().includes(search.toLowerCase()) ||
     s.course.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -66,8 +68,19 @@ function StudentTable() {
       </table>
 
       <div className="d-flex justify-content-between">
-        <button className="btn btn-secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button>
-        <button className="btn btn-secondary" onClick={() => setPage(p => p + 1)}>Next</button>
+        <button
+          className="btn btn-secondary"
+          disabled={page === 1}
+          onClick={() => setPage(p => p - 1)}
+        >
+          Previous
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={() => setPage(p => p + 1)}
+        >
+          Next
+        </button>
       </div>
     </div>
   );
